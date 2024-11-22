@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const cors = require('cors')
 const { publicRouter } = require("./src/routes/public.route.js");
+const {router} = require("./src/routes/private.route.js")
 require('dotenv').config()
 
 const app = express();
@@ -25,5 +26,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 
 app.use(publicRouter)
+app.use(router)
 
 module.exports = app;
