@@ -56,8 +56,8 @@ model Progress_TA {
 model Subject_Study {
       id String @id @default(uuid())  
       subject String
-      ta_id String @unique
-      ta TA @relation(fields: [ta_id],references: [id])
+      ta_id String? @unique
+      ta TA? @relation(fields: [ta_id],references: [id])
       bidang_dosen Bidang_Dosen[]
 }
 

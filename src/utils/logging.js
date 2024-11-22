@@ -4,13 +4,10 @@ const { combine, prettyPrint, timestamp } = format;
 
 const logger = createLogger({
     format: combine(
-        timestamp({ format: "DD-MM-YYYY HH:mm:ss" }),
+        timestamp({ format: "HH:mm:ss" }),
         prettyPrint()
     ),
     transports: [
-        new transports.Console({
-            level: "debug",
-        }),
         new transports.File({
             filename: "./logs/info.log",
             level: "info",
@@ -21,5 +18,7 @@ const logger = createLogger({
         }),
     ],
 });
+
+
 
 module.exports = { logger };

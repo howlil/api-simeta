@@ -4,7 +4,7 @@ async function checkPassword(requestPassword, userPassword) {
   try {
     return await bcrypt.compare(requestPassword, userPassword);
   } catch (error) {
-    throw new Error("Password verification failed");
+    throw new Error(error);
   }
 }
 

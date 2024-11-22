@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const cors = require('cors')
 const { publicRouter } = require("./src/routes/public.route.js");
+require('dotenv').config()
 
 const app = express();
 
@@ -13,12 +14,15 @@ const corsOptions = {
   origin: "*",
 };
 
+
 app.use(cors(corsOptions))
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+
 
 app.use(publicRouter)
 

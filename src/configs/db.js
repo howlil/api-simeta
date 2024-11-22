@@ -25,16 +25,7 @@ if (process.env.NODE_ENV !== "production") {
   checkDatabaseConnection();
 }
 
-async function gracefulShutdown() {
-  try {
-    await prisma.$disconnect();
-    console.log("Koneksi database ditutup dengan aman.");
-    process.exit(0);
-  } catch (error) {
-    console.error("Error saat menutup koneksi database:", error);
-    process.exit(1);
-  }
-}
+
 
 
 module.exports = prisma;
