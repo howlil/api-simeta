@@ -1,5 +1,5 @@
 const prisma = require("../configs/db");
-const { createReminderSchema, updateReminderSchema } = require("../validation/reminder.validation");
+const { createReminderSchema, updateReminderSchema } = require("../validations/reminder.validation");
 const { logger } = require("../utils/logging");
 
 // CREATE Reminder
