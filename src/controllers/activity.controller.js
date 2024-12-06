@@ -2,105 +2,39 @@ const { PrismaClient } = require('@prisma/client');
 const logger = require('../utils/logger');
 const prisma = new PrismaClient();
 
-const statusController = {
-  getStatus: async (req, res) => {
+const activityController = {
+  createActivity: async (req, res) => {
     try {
-      const { ta_id } = req.params;
-
-      logger.info('Fetching thesis status', {
+      logger.info('Creating new activity', {
         userId: req.mahasiswa.id,
-        ta_id
+        body: req.body
       });
 
-      const status = await prisma.thesisStatus.findUnique({
-        where: { ta_id },
-        include: {
-          ta: {
-            include: {
-              mahasiswa: true
-            }
-          },
-          dosen: true
-        }
-      });
-
-      if (!status) {
-        logger.warn('Status not found', {
-          userId: req.mahasiswa.id,
-          ta_id
-        });
-        return res.status(404).json({
-          success: false,
-          message: 'Thesis status not found'
-        });
-      }
-
-      logger.info('Successfully fetched thesis status', {
-        userId: req.mahasiswa.id,
-        ta_id,
-        currentPhase: status.currentPhase
-      });
-
-      res.json({
-        success: true,
-        data: status
-      });
-    } catch (error) {
-      logger.error('Error fetching thesis status', {
-        userId: req.mahasiswa.id,
-        error: error.message,
-        stack: error.stack
-      });
-      res.status(500).json({
-        success: false,
-        message: error.message
-      });
-    }
-  },
-
-  updateStatus: async (req, res) => {
-    try {
-      const { ta_id } = req.params;
-      const { currentPhase, progress, notes } = req.body;
-
-      logger.info('Updating thesis status', {
-        userId: req.mahasiswa.id,
-        ta_id,
-        currentPhase,
-        progress
-      });
-
-      const status = await prisma.thesisStatus.update({
-        where: { ta_id },
+      const activity = await prisma.thesisActivity.create({
         data: {
-          currentPhase,
-          progress,
-          notes,
-          lastUpdate: new Date()
+          ...req.body,
+          status: 'planned'
         },
         include: {
           ta: {
             include: {
               mahasiswa: true
             }
-          },
-          dosen: true
+          }
         }
       });
 
-      logger.info('Successfully updated thesis status', {
+      logger.info('Successfully created activity', {
         userId: req.mahasiswa.id,
-        ta_id,
-        currentPhase: status.currentPhase,
-        progress: status.progress
+        activityId: activity.id
       });
 
-      res.json({
+      res.status(201).json({
         success: true,
-        data: status
+        data: activity
       });
     } catch (error) {
-      logger.error('Error updating thesis status', {
+      logger.error('Error creating activity', {
         userId: req.mahasiswa.id,
         error: error.message,
         stack: error.stack
@@ -112,69 +46,39 @@ const statusController = {
     }
   },
 
-  getStatusOverview: async (req, res) => {
+  getActivities: async (req, res) => {
     try {
       const { ta_id } = req.params;
 
-      logger.info('Fetching thesis status overview', {
+      logger.info('Fetching activities by TA ID', {
         userId: req.mahasiswa.id,
         ta_id
       });
 
-      // Get status with related data
-      const status = await prisma.thesisStatus.findUnique({
+      const activities = await prisma.thesisActivity.findMany({
         where: { ta_id },
         include: {
           ta: {
             include: {
-              mahasiswa: true,
-              milestone: {
-                include: {
-                  progress_TA: true
-                }
-              }
+              mahasiswa: true
             }
-          },
-          dosen: true
-        }
+          }
+        },
+        orderBy: { date: 'desc' }
       });
 
-      if (!status) {
-        logger.warn('Status overview not found', {
-          userId: req.mahasiswa.id,
-          ta_id
-        });
-        return res.status(404).json({
-          success: false,
-          message: 'Thesis status not found'
-        });
-      }
-
-      // Calculate additional metrics
-      const overview = {
-        status: status,
-        completedMilestones: status.ta.milestone.filter(m => 
-          m.progress_TA.some(p => p.status === 'completed')
-        ).length,
-        totalMilestones: status.ta.milestone.length,
-        lastUpdate: status.lastUpdate,
-        estimatedCompletion: status.targetDate
-      };
-
-      logger.info('Successfully fetched thesis status overview', {
+      logger.info('Successfully fetched activities', {
         userId: req.mahasiswa.id,
         ta_id,
-        currentPhase: status.currentPhase,
-        progress: status.progress,
-        completedMilestones: overview.completedMilestones
+        count: activities.length
       });
 
       res.json({
         success: true,
-        data: overview
+        data: activities
       });
     } catch (error) {
-      logger.error('Error fetching thesis status overview', {
+      logger.error('Error fetching activities', {
         userId: req.mahasiswa.id,
         error: error.message,
         stack: error.stack
@@ -184,7 +88,139 @@ const statusController = {
         message: error.message
       });
     }
+  },
+
+  getActivityById: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      logger.info('Fetching activity by id', {
+        userId: req.mahasiswa.id,
+        activityId: id
+      });
+
+      const activity = await prisma.thesisActivity.findUnique({
+        where: { id },
+        include: {
+          ta: {
+            include: {
+              mahasiswa: true
+            }
+          }
+        }
+      });
+
+      if (!activity) {
+        logger.warn('Activity not found', {
+          userId: req.mahasiswa.id,
+          activityId: id
+        });
+        return res.status(404).json({
+          success: false,
+          message: 'Activity not found'
+        });
+      }
+
+      logger.info('Successfully fetched activity', {
+        userId: req.mahasiswa.id,
+        activityId: id
+      });
+
+      res.json({
+        success: true,
+        data: activity
+      });
+    } catch (error) {
+      logger.error('Error fetching activity', {
+        userId: req.mahasiswa.id,
+        error: error.message,
+        stack: error.stack
+      });
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
+    }
+  },
+
+  updateActivity: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      logger.info('Updating activity', {
+        userId: req.mahasiswa.id,
+        activityId: id,
+        body: req.body
+      });
+
+      const activity = await prisma.thesisActivity.update({
+        where: { id },
+        data: req.body,
+        include: {
+          ta: {
+            include: {
+              mahasiswa: true
+            }
+          }
+        }
+      });
+
+      logger.info('Successfully updated activity', {
+        userId: req.mahasiswa.id,
+        activityId: id
+      });
+
+      res.json({
+        success: true,
+        data: activity
+      });
+    } catch (error) {
+      logger.error('Error updating activity', {
+        userId: req.mahasiswa.id,
+        error: error.message,
+        stack: error.stack
+      });
+      res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+  },
+
+  deleteActivity: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      logger.info('Deleting activity', {
+        userId: req.mahasiswa.id,
+        activityId: id
+      });
+
+      await prisma.thesisActivity.delete({
+        where: { id }
+      });
+
+      logger.info('Successfully deleted activity', {
+        userId: req.mahasiswa.id,
+        activityId: id
+      });
+
+      res.json({
+        success: true,
+        message: 'Activity deleted successfully'
+      });
+    } catch (error) {
+      logger.error('Error deleting activity', {
+        userId: req.mahasiswa.id,
+        error: error.message,
+        stack: error.stack
+      });
+      res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
   }
 };
 
-module.exports = statusController;
+module.exports = activityController;

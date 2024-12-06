@@ -2,72 +2,17 @@ const { PrismaClient } = require('@prisma/client');
 const logger = require('../utils/logger');
 const prisma = new PrismaClient();
 
-const documentController = {
-  createDocument: async (req, res) => {
-    try {
-      const { ta_id, dosen_id, documentType, title, version, fileUrl } = req.body;
-
-      logger.info('Creating new thesis document', {
-        userId: req.mahasiswa.id,
-        ta_id,
-        documentType
-      });
-
-      const document = await prisma.thesisDocument.create({
-        data: {
-          ta_id,
-          dosen_id,
-          documentType,
-          title,
-          version,
-          fileUrl,
-          status: 'draft',
-          uploadDate: new Date()
-        },
-        include: {
-          ta: {
-            include: {
-              mahasiswa: true
-            }
-          },
-          dosen: true
-        }
-      });
-
-      logger.info('Successfully created thesis document', {
-        userId: req.mahasiswa.id,
-        documentId: document.id,
-        documentType
-      });
-
-      res.status(201).json({
-        success: true,
-        data: document
-      });
-    } catch (error) {
-      logger.error('Error creating thesis document', {
-        userId: req.mahasiswa.id,
-        error: error.message,
-        stack: error.stack,
-        requestBody: req.body
-      });
-      res.status(400).json({
-        success: false,
-        message: error.message
-      });
-    }
-  },
-
-  getDocuments: async (req, res) => {
+const statusController = {
+  getStatus: async (req, res) => {
     try {
       const { ta_id } = req.params;
 
-      logger.info('Fetching thesis documents', {
+      logger.info('Fetching thesis status', {
         userId: req.mahasiswa.id,
         ta_id
       });
 
-      const documents = await prisma.thesisDocument.findMany({
+      const status = await prisma.thesisStatus.findUnique({
         where: { ta_id },
         include: {
           ta: {
@@ -76,77 +21,32 @@ const documentController = {
             }
           },
           dosen: true
-        },
-        orderBy: { uploadDate: 'desc' }
-      });
-
-      logger.info('Successfully fetched thesis documents', {
-        userId: req.mahasiswa.id,
-        ta_id,
-        count: documents.length
-      });
-
-      res.json({
-        success: true,
-        data: documents
-      });
-    } catch (error) {
-      logger.error('Error fetching thesis documents', {
-        userId: req.mahasiswa.id,
-        error: error.message,
-        stack: error.stack
-      });
-      res.status(500).json({
-        success: false,
-        message: error.message
-      });
-    }
-  },
-
-  getDocumentById: async (req, res) => {
-    try {
-      const { id } = req.params;
-
-      logger.info('Fetching thesis document by id', {
-        userId: req.mahasiswa.id,
-        documentId: id
-      });
-
-      const document = await prisma.thesisDocument.findUnique({
-        where: { id },
-        include: {
-          ta: {
-            include: {
-              mahasiswa: true
-            }
-          },
-          dosen: true
         }
       });
 
-      if (!document) {
-        logger.warn('Document not found', {
+      if (!status) {
+        logger.warn('Status not found', {
           userId: req.mahasiswa.id,
-          documentId: id
+          ta_id
         });
         return res.status(404).json({
           success: false,
-          message: 'Document not found'
+          message: 'Thesis status not found'
         });
       }
 
-      logger.info('Successfully fetched thesis document', {
+      logger.info('Successfully fetched thesis status', {
         userId: req.mahasiswa.id,
-        documentId: id,
-        documentType: document.documentType
+        ta_id,
+        currentPhase: status.currentPhase
       });
 
       res.json({
         success: true,
-        data: document
+        data: status
       });
     } catch (error) {
-      logger.error('Error fetching thesis document', {
+      logger.error('Error fetching thesis status', {
         userId: req.mahasiswa.id,
         error: error.message,
         stack: error.stack
@@ -158,28 +58,25 @@ const documentController = {
     }
   },
 
-  updateDocument: async (req, res) => {
+  updateStatus: async (req, res) => {
     try {
-      const { id } = req.params;
-      const { status, comments } = req.body;
+      const { ta_id } = req.params;
+      const { currentPhase, progress, notes } = req.body;
 
-      logger.info('Updating thesis document', {
+      logger.info('Updating thesis status', {
         userId: req.mahasiswa.id,
-        documentId: id,
-        newStatus: status
+        ta_id,
+        currentPhase,
+        progress
       });
 
-      const document = await prisma.thesisDocument.update({
-        where: { id },
+      const status = await prisma.thesisStatus.update({
+        where: { ta_id },
         data: {
-          status,
-          comments: comments ? {
-            push: {
-              userId: req.mahasiswa.id,
-              content: comments,
-              date: new Date()
-            }
-          } : undefined
+          currentPhase,
+          progress,
+          notes,
+          lastUpdate: new Date()
         },
         include: {
           ta: {
@@ -191,22 +88,22 @@ const documentController = {
         }
       });
 
-      logger.info('Successfully updated thesis document', {
+      logger.info('Successfully updated thesis status', {
         userId: req.mahasiswa.id,
-        documentId: id,
-        newStatus: document.status
+        ta_id,
+        currentPhase: status.currentPhase,
+        progress: status.progress
       });
 
       res.json({
         success: true,
-        data: document
+        data: status
       });
     } catch (error) {
-      logger.error('Error updating thesis document', {
+      logger.error('Error updating thesis status', {
         userId: req.mahasiswa.id,
         error: error.message,
-        stack: error.stack,
-        requestBody: req.body
+        stack: error.stack
       });
       res.status(400).json({
         success: false,
@@ -215,35 +112,74 @@ const documentController = {
     }
   },
 
-  deleteDocument: async (req, res) => {
+  getStatusOverview: async (req, res) => {
     try {
-      const { id } = req.params;
+      const { ta_id } = req.params;
 
-      logger.info('Deleting thesis document', {
+      logger.info('Fetching thesis status overview', {
         userId: req.mahasiswa.id,
-        documentId: id
+        ta_id
       });
 
-      await prisma.thesisDocument.delete({
-        where: { id }
+      // Get status with related data
+      const status = await prisma.thesisStatus.findUnique({
+        where: { ta_id },
+        include: {
+          ta: {
+            include: {
+              mahasiswa: true,
+              milestone: {
+                include: {
+                  progress_TA: true
+                }
+              }
+            }
+          },
+          dosen: true
+        }
       });
 
-      logger.info('Successfully deleted thesis document', {
+      if (!status) {
+        logger.warn('Status overview not found', {
+          userId: req.mahasiswa.id,
+          ta_id
+        });
+        return res.status(404).json({
+          success: false,
+          message: 'Thesis status not found'
+        });
+      }
+
+      // Calculate additional metrics
+      const overview = {
+        status: status,
+        completedMilestones: status.ta.milestone.filter(m => 
+          m.progress_TA.some(p => p.status === 'completed')
+        ).length,
+        totalMilestones: status.ta.milestone.length,
+        lastUpdate: status.lastUpdate,
+        estimatedCompletion: status.targetDate
+      };
+
+      logger.info('Successfully fetched thesis status overview', {
         userId: req.mahasiswa.id,
-        documentId: id
+        ta_id,
+        currentPhase: status.currentPhase,
+        progress: status.progress,
+        completedMilestones: overview.completedMilestones
       });
 
       res.json({
         success: true,
-        message: 'Document deleted successfully'
+        data: overview
       });
     } catch (error) {
-      logger.error('Error deleting thesis document', {
+      logger.error('Error fetching thesis status overview', {
         userId: req.mahasiswa.id,
         error: error.message,
         stack: error.stack
       });
-      res.status(400).json({
+      res.status(500).json({
         success: false,
         message: error.message
       });
@@ -251,4 +187,4 @@ const documentController = {
   }
 };
 
-module.exports = documentController;
+module.exports = statusController;
