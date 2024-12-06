@@ -118,4 +118,61 @@ model Token {
   mahasiswa Mahasiswa  @relation(fields: [mahasiswa_id],references: [id], onDelete: Cascade,onUpdate: Cascade)
 }
 
+model Jadwal_Bimbingan {
+  id          String    @id @default(uuid())
+  ta_id       String
+  dosen_id    String
+  date        DateTime
+  time        String
+  location    String
+  topic       String
+  status      String    @default("pending")
+  notes       String?
+  createdAt   DateTime  @default(now())
+  ta          TA        @relation(fields: [ta_id], references: [id])
+  dosen       Dosen     @relation(fields: [dosen_id], references: [id])
+}
+
+model Timeline_Aktifitas {
+  id          String    @id @default(uuid())
+  ta_id       String
+  activityType String   // proposal, research, writing, seminar, revision, defense
+  description String
+  date        DateTime
+  status      String    @default("planned")
+  attachments Json?     // Array of {fileName, fileUrl, uploadDate}
+  createdAt   DateTime  @default(now())
+  ta          TA        @relation(fields: [ta_id], references: [id])
+}
+
+model Status_TA {
+  id          String    @id @default(uuid())
+  ta_id       String    @unique
+  dosen_id    String
+  title       String
+  currentPhase String
+  progress    Int       @default(0)
+  startDate   DateTime
+  targetDate  DateTime?
+  lastUpdate  DateTime  @default(now())
+  notes       String?
+  ta          TA        @relation(fields: [ta_id], references: [id])
+  dosen       Dosen     @relation(fields: [dosen_id], references: [id])
+}
+
+model Dokumen_TA {
+  id          String    @id @default(uuid())
+  ta_id       String
+  dosen_id    String
+  documentType String
+  title       String
+  version     String
+  fileUrl     String
+  uploadDate  DateTime  @default(now())
+  status      String    @default("draft")
+  comments    Json?     // Array of {userId, content, date}
+  ta          TA        @relation(fields: [ta_id], references: [id])
+  dosen       Dosen     @relation(fields: [dosen_id], references: [id])
+}
+
 
