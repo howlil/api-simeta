@@ -43,7 +43,10 @@ const authenticate = async (req, res, next) => {
 
     const user = await prisma.user.findUnique({
       where: { id: claims.uuid },
-      include: { token: true }, 
+      include: {
+         token: true, 
+         ta : true
+       }, 
     });
 
     if (!user) {
@@ -69,6 +72,7 @@ const authenticate = async (req, res, next) => {
 
     req.user = user;
     req.sessionToken = sessionToken;
+    
 
     logger.info(`User ${user.id} authenticated successfully`);
     next();
