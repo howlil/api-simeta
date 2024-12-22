@@ -39,6 +39,15 @@ exports.getMilestonesByTA = async (req, res) => {
       })),
     }));
 
+    // Sorting milestones by status
+    const statusOrder = {
+      COMPLETED: 0,
+      IN_PROGRESS: 1,
+      NOT_STARTED: 2,
+    };
+
+    formattedMilestones.sort((a, b) => statusOrder[a.status] - statusOrder[b.status]);
+
     res.status(200).json({
       error: false,
       messages: "Success",
