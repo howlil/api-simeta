@@ -4,7 +4,7 @@ const { checkPassword } = require('../utils/bcrypt.js');
 const { generateToken } = require('../utils/jwt.js');
 const { logger } = require('../utils/logging.js');
 const { loginSchema } = require('../validations/auth.validation.js');
-const validate = require('../middlewares/validate.midlleware.js');
+const validate = require('../middlewares/validate.middleware.js');
 
 const login = async (req, res) => {
   try {

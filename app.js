@@ -23,9 +23,26 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.use('/files', express.static(path.join(__dirname, 'public/files')));
 
 
 app.use(publicRouter)
 app.use(router)
+
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({
+      error: true,
+      messages: `File upload error: ${err.message}`,
+    });
+  }
+  if (err.message === "Only PDF files are allowed!") {
+    return res.status(400).json({
+      error: true,
+      messages: err.message,
+    });
+  }
+  next(err);
+});
 
 module.exports = app;

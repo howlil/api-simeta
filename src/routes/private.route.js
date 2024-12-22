@@ -5,15 +5,16 @@ const progressController = require("../controllers/progress.controller");
 const milestoneController = require("../controllers/milestone.controller.js")
 const reminderController = require("../controllers/reminder.controller");
 const bimbinganController = require("../controllers/bimbingan.controller.js");
+const {uploadPDF} = require("../middlewares/file.middleware.js")
 const router = express.Router();
 
 router.use(authenticate)
 
 // loogbook
-router.post("/api/v1/logbook", logbookController.createLogbook);
+router.post("/api/v1/logbook",uploadPDF, logbookController.createLogbook);
 router.get("/api/v1/logbooks", logbookController.getLogbooks);
 router.get("/api/v1/logbooks/:id", logbookController.getLogbookById);
-router.patch("/api/v1/logbooks/:id",  logbookController.updateLogbook);
+router.patch("/api/v1/logbooks/:id", logbookController.updateLogbook);
 router.delete("/api/v1/logbook/:id", logbookController.deleteLogbook);
 
 

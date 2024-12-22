@@ -1,12 +1,16 @@
 const prisma = require("../configs/db");
 const { logger } = require("../utils/logging");
 const { createLogbookSchema, updateLogbookSchema } = require("../validations/loogbook.validation.js");
+const validate = require("../middlewares/validate.middleware.js");
 
 exports.createLogbook = async (req, res) => {
   try {
     logger.info("Create logbook process started");
 
-    // 1. Ambil TA ID
+    if (!req.file) {
+      return res.status(400).json({ message: 'Proposal file is required.', data: null });
+    }
+
     const ta_id = req.user?.ta?.id;
     if (!ta_id) {
       logger.warn("User has no TA registered");
@@ -17,10 +21,8 @@ exports.createLogbook = async (req, res) => {
     }
     logger.info(`TA ID found: ${ta_id}`);
 
-    // 2. Log request body
     logger.info("Request body received", req.body);
 
-    // 3. Validasi input menggunakan schema
     try {
       await createLogbookSchema.validate(req.body, { abortEarly: false });
     } catch (validationError) {
@@ -31,11 +33,13 @@ exports.createLogbook = async (req, res) => {
         messages: errorMessages,
       });
     }
+    const file_url = `https://${req.get('host')}/files/${req.file.filename}`;
 
     // 4. Tambahkan date jika tidak disediakan
     const logbookData = {
       ...req.body,
       ta_id,
+      attachment_url: file_url,
       date: req.body.date || new Date().toISOString().split("T")[0], // Default ke YYYY-MM-DD jika tidak ada
     };
 
