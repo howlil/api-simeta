@@ -11,14 +11,16 @@ exports.createProgress = async (req, res) => {
     const { error, messages, data } = await createProgressSchema.validate(req.body, {
       abortEarly: false,
     });
-
     if (error) {
       return res.status(400).json({ error: true, messages });
     }
 
+    const { milestone_id, title, details } = req.body;
+
+
     // Cari milestone terkait
     const milestone = await prisma.milestone.findUnique({
-      where: { id: data.milestone_id },
+      where: { id: milestone_id },
     });
 
     if (!milestone) {
@@ -31,15 +33,15 @@ exports.createProgress = async (req, res) => {
     // Buat progress baru di Progress_TA
     const progress = await prisma.progress_TA.create({
       data: {
-        title: data.title,
-        details: data.details,
+        title,
+        details
       },
     });
 
     // Hubungkan progress dengan milestone melalui Progress_Milestone_TA
     await prisma.progress_Milestone_TA.create({
       data: {
-        milestone_id: data.milestone_id,
+        milestone_id: milestone_id,
         progress_ta_id: progress.id,
         point: 50, // Tambahkan poin 50
       },
@@ -50,7 +52,7 @@ exports.createProgress = async (req, res) => {
       _sum: {
         point: true,
       },
-      where: { milestone_id: data.milestone_id },
+      where: { milestone_id },
     });
 
     // Perbarui poin dan status milestone
@@ -190,12 +192,13 @@ exports.updateProgress = async (req, res) => {
     if (error) {
       return res.status(400).json({ error: true, messages });
     }
+    const {title,details} = req.body
 
     const progress = await prisma.progress_TA.update({
       where: { id },
       data: {
-        title: data.title,
-        details: data.details,
+        title,
+        details
       },
     });
 

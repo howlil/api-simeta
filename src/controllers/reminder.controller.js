@@ -10,7 +10,6 @@ exports.createReminder = async (req, res) => {
       return res.status(400).json({ error: true, messages });
     }
 
-    // Validasi apakah due_date di masa depan
     if (new Date(data.due_date) < new Date()) {
       return res.status(400).json({
         error: true,
@@ -18,9 +17,9 @@ exports.createReminder = async (req, res) => {
       });
     }
 
-    const reminder = await prisma.reminder.create({
+    const response = await prisma.reminder.create({
       data: {
-        ...data,
+        ...req.body,
         mahasiswa_id: req.user.id, // ID pengguna yang membuat pengingat
       },
     });
@@ -29,7 +28,7 @@ exports.createReminder = async (req, res) => {
     res.status(201).json({
       error: false,
       messages: "Reminder created successfully",
-      data: reminder,
+      data: response,
     });
   } catch (err) {
     logger.error(`Error creating reminder: ${err.message}`);
@@ -145,7 +144,7 @@ exports.updateReminder = async (req, res) => {
     }
 
     // Validasi apakah due_date di masa depan jika diperbarui
-    if (data.due_date && new Date(data.due_date) < new Date()) {
+    if (req.body.due_date && new Date(req.body.due_date) < new Date()) {
       return res.status(400).json({
         error: true,
         messages: "Due date must be in the future",
@@ -154,7 +153,7 @@ exports.updateReminder = async (req, res) => {
 
     const updatedReminder = await prisma.reminder.update({
       where: { id },
-      data,
+      ...req.body,
     });
 
     logger.info(`Reminder ${id} updated successfully by user ${req.user.id}`);

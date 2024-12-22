@@ -20,11 +20,11 @@ module.exports = {
   }),
 
   updateReminderSchema: yup.object().shape({
-    title: yup.string().min(3, "Title must be at least 3 characters"),
-    message: yup.string().min(5, "Message must be at least 5 characters"),
+    title: yup.string().min(3, "Title must be at least 3 characters").optional(),
+    message: yup.string().min(5, "Message must be at least 5 characters").optional(),
     due_date: yup.string().matches(
       /^\d{4}-\d{2}-\d{2}$/,
       "Due date must be in the format YYYY-MM-DD"
-    ),
+    ).optional(),
   }),
 };
