@@ -15,8 +15,8 @@ module.exports = {
   }),
   
   updateLogbookSchema: yup.object().shape({
-    date: yup.string().matches(dateRegex, "Date must be in the format YYYY-MM-DD"),
-    activity: yup.string(),
-    notes: yup.string(),
+    date: yup.string().matches(dateRegex, "Date must be in the format YYYY-MM-DD").optional(),
+    activity: yup.string().optional(),
+    notes: yup.string().optional(),
   })
 };

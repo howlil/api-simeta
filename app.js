@@ -6,7 +6,7 @@ const cors = require('cors')
 const { publicRouter } = require("./src/routes/public.route.js");
 const {router} = require("./src/routes/private.route.js")
 require('dotenv').config()
-
+const multer = require("multer")
 const app = express();
 
 
