@@ -1,4 +1,3 @@
-// src/middlewares/validate.middleware.js
 const validate = async (schema, data) => {
   try {
     const validatedData = await schema.validate(data, { abortEarly: false });

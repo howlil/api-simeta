@@ -4,22 +4,19 @@ const {
   updateProgressSchema,
 } = require("../validations/progress.validation");
 const { logger } = require("../utils/logging");
-const { MILESTONE_STATUS, PROGRESS_STATUS } = require("../constants/status");
+const { MILESTONE_STATUS } = require("../constants/status");
 
 exports.createProgress = async (req, res) => {
   try {
-    const { error, messages, data } = await createProgressSchema.validate(
-      req.body,
-      { abortEarly: false }
-    );
+    const { error, messages, data } = await createProgressSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
     if (error) {
       return res.status(400).json({ error: true, messages });
     }
 
-    const progress = await prisma.progress_TA.create({
-      data: { ...data },
-    });
-
+    // Cari milestone terkait
     const milestone = await prisma.milestone.findUnique({
       where: { id: data.milestone_id },
     });
@@ -31,31 +28,60 @@ exports.createProgress = async (req, res) => {
       });
     }
 
+    // Buat progress baru di Progress_TA
+    const progress = await prisma.progress_TA.create({
+      data: {
+        title: data.title,
+        details: data.details,
+      },
+    });
+
+    // Hubungkan progress dengan milestone melalui Progress_Milestone_TA
+    await prisma.progress_Milestone_TA.create({
+      data: {
+        milestone_id: data.milestone_id,
+        progress_ta_id: progress.id,
+        point: 50, // Tambahkan poin 50
+      },
+    });
+
+    // Hitung total poin terkini di milestone
+    const totalPoints = await prisma.progress_Milestone_TA.aggregate({
+      _sum: {
+        point: true,
+      },
+      where: { milestone_id: data.milestone_id },
+    });
+
+    // Perbarui poin dan status milestone
+    const updatedPoints = totalPoints._sum.point || 0;
     let updatedStatus = milestone.status;
-    if (
-      milestone.name === "Pengajuan Judul TA" &&
-      data.title === "Submit Judul TA"
-    ) {
-      updatedStatus = MILESTONE_STATUS.COMPLETED; // Milestone selesai
-    } else if (
-      milestone.name === "Pengajuan Proposal TA" &&
-      data.title === "Submit Proposal TA"
-    ) {
-      updatedStatus = MILESTONE_STATUS.IN_PROGRESS; // Milestone dimulai
+
+    if (updatedPoints >= milestone.max_point) {
+      updatedStatus = MILESTONE_STATUS.COMPLETED;
+    } else if (updatedPoints > 0) {
+      updatedStatus = MILESTONE_STATUS.IN_PROGRESS;
     }
 
-    if (updatedStatus !== milestone.status) {
-      await prisma.milestone.update({
-        where: { id: milestone.id },
-        data: { status: updatedStatus },
-      });
-    }
+    await prisma.milestone.update({
+      where: { id: milestone.id },
+      data: {
+        status: updatedStatus,
+      },
+    });
 
     logger.info("Progress TA created and milestone updated successfully");
     res.status(201).json({
       error: false,
       messages: "Progress TA created successfully",
-      data: progress,
+      data: {
+        progress,
+        milestone: {
+          id: milestone.id,
+          status: updatedStatus,
+          total_points: updatedPoints,
+        },
+      },
     });
   } catch (err) {
     logger.error(`Error creating progress: ${err.message}`);
@@ -71,8 +97,22 @@ exports.getProgressByMilestone = async (req, res) => {
     const { milestone_id } = req.params;
 
     const progressList = await prisma.progress_TA.findMany({
-      where: { milestone_id },
+      include: {
+        progress_Milestone: {
+          where: { milestone_id },
+          include: {
+            milestone: true,
+          },
+        },
+      },
     });
+
+    if (!progressList.length) {
+      return res.status(404).json({
+        error: true,
+        messages: "No progress found for this milestone",
+      });
+    }
 
     res.status(200).json({
       error: false,
@@ -80,7 +120,59 @@ exports.getProgressByMilestone = async (req, res) => {
       data: progressList,
     });
   } catch (err) {
-    logger.error(`Error retrieving progress: ${err.message}`);
+    res.status(500).json({
+      error: true,
+      messages: "Internal server error",
+    });
+  }
+};
+
+exports.getProgressDetail = async (req, res) => {
+  try {
+    const { id } = req.params; // ID progress yang diminta
+
+    // Cari detail progress berdasarkan ID
+    const progressDetail = await prisma.progress_TA.findUnique({
+      where: { id },
+      include: {
+        progress_Milestone: {
+          include: {
+            milestone: true, // Sertakan informasi milestone terkait
+          },
+        },
+      },
+    });
+
+    if (!progressDetail) {
+      return res.status(404).json({
+        error: true,
+        messages: "Progress not found",
+      });
+    }
+
+    const formattedResponse = {
+      id: progressDetail.id,
+      title: progressDetail.title,
+      details: progressDetail.details,
+      created_at: progressDetail.created_at,
+      updated_at: progressDetail.updated_at,
+      milestones: progressDetail.progress_Milestone.map((item) => ({
+        milestone_id: item.milestone.id,
+        milestone_name: item.milestone.name,
+        milestone_description: item.milestone.description,
+        milestone_status: item.milestone.status,
+        point: item.point,
+        max_point: item.milestone.max_point,
+      })),
+    };
+
+    res.status(200).json({
+      error: false,
+      messages: "Success",
+      data: formattedResponse,
+    });
+  } catch (err) {
+    logger.error(`Error retrieving progress detail: ${err.message}`);
     res.status(500).json({
       error: true,
       messages: "Internal server error",
@@ -91,107 +183,81 @@ exports.getProgressByMilestone = async (req, res) => {
 exports.updateProgress = async (req, res) => {
   try {
     const { id } = req.params;
+    const { error, messages, data } = await updateProgressSchema.validate(req.body, {
+      abortEarly: false,
+    });
 
-    const { error, messages, data } = await updateProgressSchema.validate(
-      req.body,
-      { abortEarly: false }
-    );
     if (error) {
       return res.status(400).json({ error: true, messages });
     }
 
     const progress = await prisma.progress_TA.update({
       where: { id },
-      data,
+      data: {
+        title: data.title,
+        details: data.details,
+      },
     });
 
-    const milestone = await prisma.milestone.findUnique({
-      where: { id: progress.milestone_id },
-    });
-
-    if (!milestone) {
-      return res.status(404).json({
-        error: true,
-        messages: "Milestone not found",
-      });
-    }
-
-    let updatedStatus = milestone.status;
-    if (
-      milestone.name === "Pengajuan Proposal TA" &&
-      data.title === "Submit Proposal TA"
-    ) {
-      updatedStatus = MILESTONE_STATUS.IN_PROGRESS;
-    }
-
-    if (updatedStatus !== milestone.status) {
-      await prisma.milestone.update({
-        where: { id: milestone.id },
-        data: { status: updatedStatus },
-      });
-    }
-
-    logger.info("Progress TA updated successfully");
     res.status(200).json({
       error: false,
       messages: "Progress TA updated successfully",
       data: progress,
     });
   } catch (err) {
-    logger.error(`Error updating progress: ${err.message}`);
     res.status(500).json({
       error: true,
       messages: "Internal server error",
     });
   }
 };
+
 
 exports.deleteProgress = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 1. Hapus Progress TA
-    const progress = await prisma.progress_TA.delete({
+    const progressMilestone = await prisma.progress_Milestone_TA.findUnique({
+      where: { progress_ta_id: id },
+    });
+
+    if (!progressMilestone) {
+      return res.status(404).json({
+        error: true,
+        messages: "Progress not found",
+      });
+    }
+
+    await prisma.progress_TA.delete({
       where: { id },
     });
 
-    const milestone = await prisma.milestone.findUnique({
-      where: { id: progress.milestone_id },
+    const totalPoints = await prisma.progress_Milestone_TA.aggregate({
+      _sum: { point: true },
+      where: { milestone_id: progressMilestone.milestone_id },
     });
 
-    if (!milestone) {
-      return res.status(404).json({
-        error: true,
-        messages: "Milestone not found",
-      });
+    const updatedPoints = totalPoints._sum.point || 0;
+    let updatedStatus = MILESTONE_STATUS.NOT_STARTED;
+
+    if (updatedPoints > 0) {
+      updatedStatus = MILESTONE_STATUS.IN_PROGRESS;
     }
 
-    let updatedStatus = milestone.status;
-    const remainingProgress = await prisma.progress_TA.findMany({
-      where: { milestone_id: milestone.id },
+    await prisma.milestone.update({
+      where: { id: progressMilestone.milestone_id },
+      data: { status: updatedStatus },
     });
 
-    if (remainingProgress.length === 0) {
-      updatedStatus = MILESTONE_STATUS.NOT_STARTED;
-    }
-
-    if (updatedStatus !== milestone.status) {
-      await prisma.milestone.update({
-        where: { id: milestone.id },
-        data: { status: updatedStatus },
-      });
-    }
-
-    logger.info("Progress TA deleted successfully");
     res.status(200).json({
       error: false,
       messages: "Progress TA deleted successfully",
     });
   } catch (err) {
-    logger.error(`Error deleting progress: ${err.message}`);
     res.status(500).json({
       error: true,
       messages: "Internal server error",
     });
   }
 };
+

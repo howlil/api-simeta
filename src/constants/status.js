@@ -1,47 +1,34 @@
+module.exports = {
 
-  // Status untuk model TA (Tugas Akhir)
-  const TA_STATUS = {
-    DRAFT: "draft",
-    SUBMITTED: "submitted",
-    APPROVED: "approved",
-    REJECTED: "rejected",
-    COMPLETED: "completed",
-  };
-  
-  // Status untuk model Milestone
-  const MILESTONE_STATUS = {
-    NOT_STARTED: "not_started",
-    IN_PROGRESS: "in_progress",
-    COMPLETED: "completed",
-  };
-  
-  // Status untuk model Progress_TA
-  const PROGRESS_STATUS = {
-    PENDING: "pending",
-    IN_PROGRESS: "in_progress",
-    COMPLETED: "completed",
-  };
-  
-  // Status untuk model Reminder
-  const REMINDER_STATUS = {
-    PENDING: "pending",
-    COMPLETED: "completed",
-    EXPIRED: "expired",
-  };
-  
+  TA_STATUS: {
+    DRAFT: "DRAFT",
+    SUBMITTED: "SUBMITTED",
+    APPROVED: "APPROVED",
+    REJECTED: "REJECTED",
+    COMPLETED: "COMPLETED",
+  },
 
-  
-  const LOGBOOK_STATUS = {
-    DRAFT: "draft",
-    REJECTED : "rejected",
-    FINALIZED: "finalized",
-  };
-  
-  module.exports = {
-    TA_STATUS,
-    MILESTONE_STATUS,
-    PROGRESS_STATUS,
-    REMINDER_STATUS,
-    LOGBOOK_STATUS,
-  };
-  
+  MILESTONE_STATUS: {
+    NOT_STARTED: "NOT_STARTED",
+    IN_PROGRESS: "IN_PROGRESS",
+    COMPLETED: "COMPLETED",
+  },
+
+  PROGRESS_STATUS: {
+    PENDING: "PENDING",
+    IN_PROGRESS: "IN_PROGRESS",
+    COMPLETED: "COMPLETED",
+  },
+
+  REMINDER_STATUS: {
+    PENDING: "PENDING",
+    COMPLETED: "COMPLETED",
+    EXPIRED: "EXPIRED",
+  },
+
+  LOGBOOK_STATUS: {
+    DRAFT: "DRAFT",
+    REJECTED: "REJECTED",
+    FINALIZED: "FINALIZED",
+  }
+}

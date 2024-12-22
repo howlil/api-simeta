@@ -3,34 +3,34 @@ const prisma = require('../../src/configs/db.js');
 
 const mahasiswaData = [
   {
-    full_name: 'Ahmad Farhan',
-    email: 'ahmadfarhan@unand.id',
+    full_name: 'Mhd Ulil Abshae',
+    email: 'ulil@unand.id',
     nim: '2011521001',
-    password: 'password123'
+    password: '@Test123'
   },
   {
     full_name: 'Siti Rahma',
     email: 'sitirahma@unand.id',
     nim: '2011521002',
-    password: 'password123'
+    password: '@Test123'
   },
   {
     full_name: 'Muhammad Rizki',
     email: 'muhammadrizki@unand.id',
     nim: '2011521003',
-    password: 'password123'
+    password: '@Test123'
   },
   {
     full_name: 'Anisa Putri',
     email: 'anisaputri@unand.id',
     nim: '2011521004',
-    password: 'password123'
+    password: '@Test123'
   },
   {
     full_name: 'Dimas Pratama',
     email: 'dimaspratama@unand.id',
     nim: '2011521005',
-    password: 'password123'
+    password: '@Test123'
   }
 ];
 

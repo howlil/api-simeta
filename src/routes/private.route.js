@@ -4,32 +4,44 @@ const { authenticate } = require("../middlewares/auth.middleware");
 const progressController = require("../controllers/progress.controller");
 const milestoneController = require("../controllers/milestone.controller.js")
 const reminderController = require("../controllers/reminder.controller");
-
+const bimbinganController = require("../controllers/bimbingan.controller.js");
 const router = express.Router();
 
 router.use(authenticate)
 
 // loogbook
-router.post("/api/v1/logbooks", logbookController.createLogbook);
+router.post("/api/v1/logbook", logbookController.createLogbook);
 router.get("/api/v1/logbooks", logbookController.getLogbooks);
 router.get("/api/v1/logbooks/:id", logbookController.getLogbookById);
 router.patch("/api/v1/logbooks/:id",  logbookController.updateLogbook);
-router.get("/api/v1/logbooks/:id", logbookController.deleteLogbook);
+router.delete("/api/v1/logbook/:id", logbookController.deleteLogbook);
 
 
 // Progress TA Routes
 router.post("/api/v1/progress", progressController.createProgress);
 router.get("/api/v1/progress/:milestone_id", progressController.getProgressByMilestone);
 router.put("/api/v1/progress/:id", progressController.updateProgress);
+router.get("/api/v1/progress/:id", progressController.getProgressDetail);
 router.delete("/api/v1/progress/:id", progressController.deleteProgress);
 
 // Reminder Routes
 router.post("/api/v1/reminders",  reminderController.createReminder);
 router.get("/api/v1/reminders",  reminderController.getReminders);
+router.get("/api/v1/reminder/:id",  reminderController.getReminderDetail);
 router.put("/api/v1/reminders/:id",  reminderController.updateReminder);
 router.delete("/api/v1/reminders/:id",  reminderController.deleteReminder);
 
 //milestone
 router.get("/api/v1/milestones",milestoneController.getMilestonesByTA)
+
+
+router.post("/bimbingan/:ta_id",  bimbinganController.createBimbingan);
+
+router.get("/bimbingan/:ta_id",  bimbinganController.getBimbinganByTA);
+
+router.put("/bimbingan/:ta_id/:id",  bimbinganController.updateBimbingan);
+
+router.delete("/bimbingan/:ta_id/:id", bimbinganController.deleteBimbingan);
+
 
 module.exports = {router};

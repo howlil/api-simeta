@@ -10,7 +10,7 @@ datasource db {
 model Mahasiswa {
   id         String     @id @default(uuid())
   full_name  String
-  email      String @unique
+  email      String     @unique
   nim        String
   photoUrl   String?
   password   String
@@ -25,30 +25,108 @@ model TA {
   id            String         @id @default(uuid())
   title         String
   description   String
+  max_logbook   Int            @default(20)
   logbook       Logbook[]
   subject_study Subject_Study? @relation()
   dospem        Dospem[]
   milestone     Milestone[]
+  proposal      Proposal[]
+  pengajuan_TA  Pengajuan_TA[]
   mahasiswa_id  String         @unique
   mahasiswa     Mahasiswa      @relation(fields: [mahasiswa_id], references: [id])
+  semhas        Semhas[]
+  sidang        Sidang[]
+  bimbingan_TA  Bimbingan_TA[]
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
+}
+
+model Bimbingan_TA {
+  id         String    @id @default(uuid())
+  tanggal    String
+  aktifitas  String
+  status     String
+  TA         TA?       @relation(fields: [ta_id], references: [id])
+  ta_id      String?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+}
+
+model Pengajuan_TA {
+  id         String    @id @default(uuid())
+  bukti1     String
+  bukti2     String
+  bukti3     String
+  status     String
+  TA         TA?       @relation(fields: [ta_id], references: [id])
+  ta_id      String?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+}
+
+model Semhas {
+  id         String    @id @default(uuid())
+  tanggal    String
+  jam        String
+  dokumen    String
+  status     String
+  TA         TA?       @relation(fields: [ta_id], references: [id])
+  ta_id      String?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+}
+
+model Sidang {
+  id         String    @id @default(uuid())
+  tanggal    String
+  jam        String
+  dokumen    String
+  status     String
+  TA         TA?       @relation(fields: [ta_id], references: [id])
+  ta_id      String?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+}
+
+model Proposal {
+  id         String    @id @default(uuid())
+  draft      String
+  TA         TA?       @relation(fields: [ta_id], references: [id])
+  ta_id      String?
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
 }
 
 model Milestone {
-  id          String        @id @default(uuid())
-  name        String
-  description String
-  status      String
-  ta_id       String
-  progress_TA Progress_TA[]
-  ta          TA            @relation(fields: [ta_id], references: [id])
+  id                String                  @id @default(uuid())
+  name              String
+  description       String
+  status            String
+  max_point         Int
+  progress_Milestone Progress_Milestone_TA[]
+  ta_id             String
+  ta                TA                      @relation(fields: [ta_id], references: [id])
+  created_at        DateTime                @default(now())
+  updated_at        DateTime                @updatedAt
+}
+
+model Progress_Milestone_TA {
+  milestone_id   String
+  progress_ta_id String
+  point          Int
+  milestone      Milestone   @relation(fields: [milestone_id], references: [id])
+  progress_ta    Progress_TA @relation(fields: [progress_ta_id], references: [id])
+
+  @@id([milestone_id, progress_ta_id])
 }
 
 model Progress_TA {
-  id           String    @id @default(uuid())
-  title        String
-  details      String    @db.Text
-  milestone_id String
-  milestone    Milestone @relation(fields: [milestone_id], references: [id])
+  id                String                  @id @default(uuid())
+  title             String
+  details           String                  @db.Text
+  progress_Milestone Progress_Milestone_TA[]
+  created_at        DateTime                @default(now())
+  updated_at        DateTime                @updatedAt
 }
 
 model Subject_Study {
@@ -57,13 +135,17 @@ model Subject_Study {
   ta_id        String?        @unique
   ta           TA?            @relation(fields: [ta_id], references: [id])
   bidang_dosen Bidang_Dosen[]
+  created_at   DateTime       @default(now())
+  updated_at   DateTime       @updatedAt
 }
 
 model Dospem {
-  dosen_id String
-  ta_id    String
-  dosen    Dosen  @relation(fields: [dosen_id], references: [id])
-  ta       TA     @relation(fields: [ta_id], references: [id])
+  dosen_id     String
+  ta_id        String
+  dosen        Dosen  @relation(fields: [dosen_id], references: [id])
+  ta           TA     @relation(fields: [ta_id], references: [id])
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
 
   @@id([dosen_id, ta_id])
 }
@@ -72,9 +154,11 @@ model Dosen {
   id           String         @id @default(uuid())
   full_name    String
   nip          String
-  postion      String
+  position     String
   bidang_dosen Bidang_Dosen[]
   dospem       Dospem[]
+  created_at   DateTime       @default(now())
+  updated_at   DateTime       @updatedAt
 }
 
 model Bidang_Dosen {
@@ -82,6 +166,8 @@ model Bidang_Dosen {
   subject_study_id String
   dosen            Dosen         @relation(fields: [dosen_id], references: [id])
   subject_study    Subject_Study @relation(fields: [subject_study_id], references: [id])
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @updatedAt
 
   @@id([dosen_id, subject_study_id])
 }
@@ -94,6 +180,8 @@ model Logbook {
   attachment_url String
   ta_id          String
   ta             TA     @relation(fields: [ta_id], references: [id])
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
 }
 
 model Reminder {
@@ -103,6 +191,8 @@ model Reminder {
   due_date     String
   mahasiswa_id String
   mahasiswa    Mahasiswa @relation(fields: [mahasiswa_id], references: [id])
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
 }
 
 model Token {

@@ -1,15 +1,23 @@
 const yup = require("yup");
 
-const createProgressSchema = yup.object().shape({
-  title: yup.string().required("Title is required"),
-  details: yup.string().required("Details are required"),
-  milestone_id: yup.string().required("Milestone ID is required"),
-});
+module.exports = {
+  createProgressSchema: yup.object().shape({
+    milestone_id: yup
+      .string()
+      .uuid("Milestone ID must be a valid UUID")
+      .required("Milestone ID is required"),
+    title: yup
+      .string()
+      .required("Title is required")
+      .min(3, "Title must be at least 3 characters"),
+    details: yup
+      .string()
+      .max(1000, "Details cannot exceed 1000 characters")
+      .required("Details are required"),
+  }),
 
-const updateProgressSchema = yup.object().shape({
-  title: yup.string(),
-  details: yup.string(),
-  milestone_id: yup.string(),
-});
-
-module.exports = { createProgressSchema, updateProgressSchema };
+  updateProgressSchema: yup.object().shape({
+    title: yup.string().min(3, "Title must be at least 3 characters"),
+    details: yup.string().max(1000, "Details cannot exceed 1000 characters"),
+  }),
+};

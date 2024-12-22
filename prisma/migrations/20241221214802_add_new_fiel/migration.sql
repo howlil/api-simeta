@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Logbook" ALTER COLUMN "date" SET DATA TYPE TEXT;

@@ -55,7 +55,7 @@ async function seedDosen() {
         data: {
           full_name: dosen.full_name,
           nip: dosen.nip,
-          postion: dosen.postion
+          position: dosen.postion
         }
       });
       

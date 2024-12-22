@@ -10,6 +10,14 @@ exports.createReminder = async (req, res) => {
       return res.status(400).json({ error: true, messages });
     }
 
+    // Validasi apakah due_date di masa depan
+    if (new Date(data.due_date) < new Date()) {
+      return res.status(400).json({
+        error: true,
+        messages: "Due date must be in the future",
+      });
+    }
+
     const reminder = await prisma.reminder.create({
       data: {
         ...data,
@@ -32,11 +40,66 @@ exports.createReminder = async (req, res) => {
   }
 };
 
+exports.getReminderDetail = async (req, res) => {
+  try {
+    const { id } = req.params; // ID reminder yang diminta
+
+    // Cari reminder berdasarkan ID
+    const reminder = await prisma.reminder.findUnique({
+      where: { id },
+      include: {
+        mahasiswa: true, // Sertakan informasi mahasiswa terkait
+      },
+    });
+
+    if (!reminder) {
+      return res.status(404).json({
+        error: true,
+        messages: "Reminder not found",
+      });
+    }
+
+    // Pastikan reminder milik pengguna saat ini
+    if (reminder.mahasiswa_id !== req.user.id) {
+      return res.status(403).json({
+        error: true,
+        messages: "You are not authorized to access this reminder",
+      });
+    }
+
+    res.status(200).json({
+      error: false,
+      messages: "Success",
+      data: {
+        id: reminder.id,
+        title: reminder.title,
+        message: reminder.message,
+        due_date: reminder.due_date,
+        created_at: reminder.created_at,
+        updated_at: reminder.updated_at,
+        mahasiswa: {
+          id: reminder.mahasiswa.id,
+          full_name: reminder.mahasiswa.full_name,
+          email: reminder.mahasiswa.email,
+        },
+      },
+    });
+  } catch (err) {
+    logger.error(`Error retrieving reminder detail: ${err.message}`);
+    res.status(500).json({
+      error: true,
+      messages: "Internal server error",
+    });
+  }
+};
+
+
 // GET All Reminders by User
 exports.getReminders = async (req, res) => {
   try {
     const reminders = await prisma.reminder.findMany({
       where: { mahasiswa_id: req.user.id },
+      orderBy: { due_date: 'asc' }, // Urutkan berdasarkan due_date
     });
 
     res.status(200).json({
@@ -63,15 +126,29 @@ exports.updateReminder = async (req, res) => {
       return res.status(400).json({ error: true, messages });
     }
 
-    // Periksa apakah pengingat adalah milik pengguna
     const reminder = await prisma.reminder.findUnique({
       where: { id },
     });
 
-    if (!reminder || reminder.mahasiswa_id !== req.user.id) {
+    if (!reminder) {
+      return res.status(404).json({
+        error: true,
+        messages: "Reminder not found",
+      });
+    }
+
+    if (reminder.mahasiswa_id !== req.user.id) {
       return res.status(403).json({
         error: true,
         messages: "You are not authorized to update this reminder",
+      });
+    }
+
+    // Validasi apakah due_date di masa depan jika diperbarui
+    if (data.due_date && new Date(data.due_date) < new Date()) {
+      return res.status(400).json({
+        error: true,
+        messages: "Due date must be in the future",
       });
     }
 
@@ -95,17 +172,24 @@ exports.updateReminder = async (req, res) => {
   }
 };
 
+
 // DELETE Reminder
 exports.deleteReminder = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Periksa apakah pengingat adalah milik pengguna
     const reminder = await prisma.reminder.findUnique({
       where: { id },
     });
 
-    if (!reminder || reminder.mahasiswa_id !== req.user.id) {
+    if (!reminder) {
+      return res.status(404).json({
+        error: true,
+        messages: "Reminder not found",
+      });
+    }
+
+    if (reminder.mahasiswa_id !== req.user.id) {
       return res.status(403).json({
         error: true,
         messages: "You are not authorized to delete this reminder",
