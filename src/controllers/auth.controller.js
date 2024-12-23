@@ -22,7 +22,7 @@ const login = async (req, res) => {
       });
     }
 
-    const { email, password } = validation.data;
+    const { email, password, fcmToken } = validation.data;
     logger.info(`Validation successful, attempting to find user with email: ${email}`);
 
     // Cari user dengan email yang sudah divalidasi
@@ -61,6 +61,16 @@ const login = async (req, res) => {
       });
     }
 
+    if (fcmToken) {
+      logger.info(`Updating FCM token for user: ${user.email}`);
+      await prisma.mahasiswa.update({
+        where: { id: user.id },
+        data: { fcmToken },
+      });
+      logger.info(`FCM token updated for user: ${user.email}`);
+    } else {
+      logger.warn('No FCM token provided in request');
+    }
     // Generate token
     logger.info('Generating JWT token');
     const token = generateToken(user.id);
@@ -214,4 +224,20 @@ const dashboard = async (req, res) => {
     });
   }
 };
-module.exports = { login, me,dashboard };
+
+const logout = async (req, res) => {
+  const { userId } = req.user.id;
+
+  try {
+    await prisma.mahasiswa.update({
+      where: { id: userId },
+      data: { fcmToken: null },
+    });
+
+    res.status(200).json({ error: false, message: 'Logout berhasil' });
+  } catch (error) {
+    res.status(500).json({ error: true, message: 'Terjadi kesalahan saat logout' });
+  }
+};
+
+module.exports = { login, me,dashboard ,logout};

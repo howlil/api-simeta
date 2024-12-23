@@ -14,6 +14,7 @@ model Mahasiswa {
   nim        String
   photoUrl   String?
   password   String
+  fcmToken   String? @db.Text
   token      Token[]
   reminder   Reminder[]
   ta         TA?        @relation()

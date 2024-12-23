@@ -5,10 +5,11 @@ const {
 } = require("../validations/progress.validation");
 const { logger } = require("../utils/logging");
 const { MILESTONE_STATUS } = require("../constants/status");
+const admin = require("firebase-admin");
 
 exports.createProgress = async (req, res) => {
   try {
-    const { error, messages, data } = await createProgressSchema.validate(req.body, {
+    const { error, messages } = await createProgressSchema.validate(req.body, {
       abortEarly: false,
     });
     if (error) {
@@ -17,10 +18,16 @@ exports.createProgress = async (req, res) => {
 
     const { milestone_id, title, details } = req.body;
 
-
     // Cari milestone terkait
     const milestone = await prisma.milestone.findUnique({
       where: { id: milestone_id },
+      include: {
+        ta: {
+          include: {
+            mahasiswa: true, // Termasuk mahasiswa untuk mengambil token FCM
+          },
+        },
+      },
     });
 
     if (!milestone) {
@@ -34,7 +41,7 @@ exports.createProgress = async (req, res) => {
     const progress = await prisma.progress_TA.create({
       data: {
         title,
-        details
+        details,
       },
     });
 
@@ -60,9 +67,9 @@ exports.createProgress = async (req, res) => {
     let updatedStatus = milestone.status;
 
     if (updatedPoints >= milestone.max_point) {
-      updatedStatus = MILESTONE_STATUS.COMPLETED;
+      updatedStatus = "COMPLETED";
     } else if (updatedPoints > 0) {
-      updatedStatus = MILESTONE_STATUS.IN_PROGRESS;
+      updatedStatus = "IN_PROGRESS";
     }
 
     await prisma.milestone.update({
@@ -71,6 +78,34 @@ exports.createProgress = async (req, res) => {
         status: updatedStatus,
       },
     });
+
+    // Jika milestone selesai, kirim notifikasi
+    if (updatedStatus === "COMPLETED") {
+      const mahasiswa = milestone.ta?.mahasiswa;
+
+      if (mahasiswa?.fcmToken) {
+        const message = {
+          token: mahasiswa.fcmToken,
+          notification: {
+            title: "Milestone Completed",
+            body: `Selamat! Anda telah menyelesaikan milestone "${milestone.name}".`,
+          },
+          data: {
+            milestoneId: milestone.id,
+            milestoneName: milestone.name,
+          },
+        };
+
+        try {
+          await admin.messaging().send(message);
+          console.log("Notification sent successfully");
+        } catch (err) {
+          console.error("Error sending notification:", err);
+        }
+      } else {
+        console.warn("No FCM token available for this user");
+      }
+    }
 
     logger.info("Progress TA created and milestone updated successfully");
     res.status(201).json({
@@ -93,6 +128,7 @@ exports.createProgress = async (req, res) => {
     });
   }
 };
+
 
 exports.getProgressByMilestone = async (req, res) => {
   try {
