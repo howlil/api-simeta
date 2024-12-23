@@ -82,7 +82,7 @@ exports.createProgress = async (req, res) => {
     // Jika milestone selesai, kirim notifikasi
     if (updatedStatus === "COMPLETED") {
       const mahasiswa = milestone.ta?.mahasiswa;
-
+    
       if (mahasiswa?.fcmToken) {
         const message = {
           token: mahasiswa.fcmToken,
@@ -93,12 +93,15 @@ exports.createProgress = async (req, res) => {
           data: {
             milestoneId: milestone.id,
             milestoneName: milestone.name,
+            status: updatedStatus,
+            completionDate: new Date().toISOString().split("T")[0], // Tanggal hari ini
           },
         };
-
+    
         try {
-          await admin.messaging().send(message);
-          console.log("Notification sent successfully");
+          console.log(`Preparing to send notification to FCM token: ${mahasiswa.fcmToken}`);
+          const response = await admin.messaging().send(message);
+          console.log("Notification sent successfully:", response);
         } catch (err) {
           console.error("Error sending notification:", err);
         }

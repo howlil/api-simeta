@@ -10,7 +10,7 @@ const loginSchema = yup.object({
     .string()
     .min(6, 'Password minimal 6 karakter')
     .required('Password wajib diisi'),
-    fcmToken: Joi.string().optional(),
+    fcmToken: yup.string().optional(),
 
 });
 
