@@ -20,6 +20,7 @@ router.patch("/api/v1/logbooks/:id", logbookController.updateLogbook);
 router.delete("/api/v1/logbook/:id", logbookController.deleteLogbook);
 
 router.get("/api/v1/me", authController.me);
+router.get("/api/v1/logout", authController.logout);
 router.get("/api/v1/dashboard", authController.dashboard);
 
 // Progress TA Routes
