@@ -10,7 +10,7 @@ exports.createReminder = async (req, res) => {
       return res.status(400).json({ error: true, messages });
     }
 
-    if (new Date(data.due_date) < new Date()) {
+    if (new Date(req.body.due_date) < new Date()) {
       return res.status(400).json({
         error: true,
         messages: "Due date must be in the future",

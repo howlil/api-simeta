@@ -4,8 +4,10 @@ const { authenticate } = require("../middlewares/auth.middleware");
 const progressController = require("../controllers/progress.controller");
 const milestoneController = require("../controllers/milestone.controller.js")
 const reminderController = require("../controllers/reminder.controller");
+const authController = require("../controllers/auth.controller.js");
 const bimbinganController = require("../controllers/bimbingan.controller.js");
 const {uploadPDF} = require("../middlewares/file.middleware.js")
+
 const router = express.Router();
 
 router.use(authenticate)
@@ -17,6 +19,8 @@ router.get("/api/v1/logbooks/:id", logbookController.getLogbookById);
 router.patch("/api/v1/logbooks/:id", logbookController.updateLogbook);
 router.delete("/api/v1/logbook/:id", logbookController.deleteLogbook);
 
+router.get("/api/v1/me", authController.me);
+router.get("/api/v1/dashboard", authController.dashboard);
 
 // Progress TA Routes
 router.post("/api/v1/progress", progressController.createProgress);
@@ -27,7 +31,7 @@ router.get("/api/v1/progress", progressController.getProgressAll);
 router.delete("/api/v1/progress/:id", progressController.deleteProgress);
 
 // Reminder Routes
-router.post("/api/v1/reminders",  reminderController.createReminder);
+router.post("/api/v1/reminder",  reminderController.createReminder);
 router.get("/api/v1/reminders",  reminderController.getReminders);
 router.get("/api/v1/reminder/:id",  reminderController.getReminderDetail);
 router.put("/api/v1/reminders/:id",  reminderController.updateReminder);

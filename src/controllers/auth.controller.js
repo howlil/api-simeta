@@ -5,6 +5,7 @@ const { generateToken } = require('../utils/jwt.js');
 const { logger } = require('../utils/logging.js');
 const { loginSchema } = require('../validations/auth.validation.js');
 const validate = require('../middlewares/validate.middleware.js');
+const { error } = require('winston');
 
 const login = async (req, res) => {
   try {
@@ -93,4 +94,124 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { login };
+const me = async (req, res) => {
+  try {
+    // Ambil ID user dari req.user
+    const id = req.user.id;
+
+    // Cari user berdasarkan ID
+    const user = await prisma.mahasiswa.findUnique({
+      where: { id },
+    });
+
+    // Periksa apakah user ditemukan
+    if (!user) {
+      logger.warn(`User with ID ${id} not found`);
+      return res.status(404).json({
+        error: true,
+        message: "User not found",
+      });
+    }
+
+    // Kirim respon jika user ditemukan
+    res.status(200).json({
+      error: false,
+      message: "User data fetched successfully",
+      data: user,
+    });
+  } catch (error) {
+    logger.error(`Error fetching user data: ${error.message}`, { error });
+    res.status(500).json({
+      error: true,
+      message: "Internal server error",
+    });
+  }
+};
+const dashboard = async (req, res) => {
+  try {
+    logger.info("Fetching dashboard data");
+
+    const userId = req.user?.id; // ID user dari token
+    if (!userId) {
+      logger.warn("User ID not found in request");
+      return res.status(400).json({
+        error: true,
+        message: "User ID is required",
+      });
+    }
+
+    // 1. Fetch TA ID terkait user
+    const ta = await prisma.tA.findUnique({
+      where: { mahasiswa_id: userId },
+    });
+
+    if (!ta) {
+      logger.warn(`TA not found for user ID: ${userId}`);
+      return res.status(404).json({
+        error: true,
+        message: "TA not found. Please register your TA first.",
+      });
+    }
+
+    // 2. Fetch reminders (hanya 1 data dengan tanggal terdekat dari hari ini)
+    const reminder = await prisma.reminder.findFirst({
+      where: { mahasiswa_id: userId },
+      orderBy: { due_date: "asc" },
+    });
+
+    // 3. Count logbooks
+    const logbookCount = await prisma.logbook.count({
+      where: { ta_id: ta.id },
+    });
+
+    // 4. Fetch max_logbook dari TA
+    const maxLogbook = ta.max_logbook;
+
+    // 5. Fetch current milestone (status: IN_PROGRESS)
+    const currentMilestone = await prisma.milestone.findFirst({
+      where: {
+        ta_id: ta.id,
+        status: "IN_PROGRESS",
+      },
+    });
+
+    // 6. Fetch all milestones with their status
+    const milestones = await prisma.milestone.findMany({
+      where: { ta_id: ta.id },
+      orderBy: { created_at: "asc" },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+      },
+    });
+
+    res.status(200).json({
+      error: false,
+      messages: "Dashboard data fetched successfully",
+      data: {
+        reminder,
+        logbook: {
+          count: logbookCount,
+          max: maxLogbook,
+        },
+        current_milestone: currentMilestone
+          ? {
+              id: currentMilestone.id,
+              name: currentMilestone.name,
+              description: currentMilestone.description,
+              status: currentMilestone.status,
+            }
+          : null,
+        milestones,
+      },
+    });
+  } catch (error) {
+    logger.error(`Error fetching dashboard data: ${error.message}`);
+    return res.status(500).json({
+      error: true,
+      message: "Internal server error",
+    });
+  }
+};
+module.exports = { login, me,dashboard };
