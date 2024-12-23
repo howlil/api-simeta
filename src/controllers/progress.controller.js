@@ -5,7 +5,7 @@ const {
 } = require("../validations/progress.validation");
 const { logger } = require("../utils/logging");
 const { MILESTONE_STATUS } = require("../constants/status");
-const admin = require("firebase-admin");
+const admin = require("../utils/firebase");
 
 exports.createProgress = async (req, res) => {
   try {

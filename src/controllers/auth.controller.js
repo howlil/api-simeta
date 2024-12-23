@@ -181,8 +181,10 @@ const dashboard = async (req, res) => {
     const currentMilestone = await prisma.milestone.findFirst({
       where: {
         ta_id: ta.id,
-        status: "IN_PROGRESS",
-      },
+        status: {
+          in: ["IN_PROGRESS", "COMPLETED"]
+        }
+      }
     });
 
     // 6. Fetch all milestones with their status
