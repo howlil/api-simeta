@@ -264,3 +264,64 @@ exports.deleteProgress = async (req, res) => {
   }
 };
 
+exports.getProgressAll = async (req, res) => {
+  try {
+    const { milestone_id } = req.query; // Filter berdasarkan milestone_id jika disediakan
+
+    // Query progress dengan filter opsional
+    const progressList = await prisma.progress_TA.findMany({
+      where: milestone_id
+        ? {
+            progress_Milestone: {
+              some: { milestone_id },
+            },
+          }
+        : undefined, // Jika milestone_id tidak disediakan, ambil semua progress
+      include: {
+        progress_Milestone: {
+          include: {
+            milestone: true, // Sertakan informasi milestone terkait
+          },
+        },
+      },
+    });
+
+    if (!progressList.length) {
+      return res.status(404).json({
+        error: true,
+        messages: milestone_id
+          ? `No progress found for milestone ID: ${milestone_id}`
+          : "No progress found",
+      });
+    }
+
+    // Format response
+    const formattedProgress = progressList.map((progress) => ({
+      id: progress.id,
+      title: progress.title,
+      details: progress.details,
+      created_at: progress.created_at,
+      updated_at: progress.updated_at,
+      milestones: progress.progress_Milestone.map((item) => ({
+        milestone_id: item.milestone.id,
+        milestone_name: item.milestone.name,
+        milestone_description: item.milestone.description,
+        milestone_status: item.milestone.status,
+        point: item.point,
+        max_point: item.milestone.max_point,
+      })),
+    }));
+
+    res.status(200).json({
+      error: false,
+      messages: "Success",
+      data: formattedProgress,
+    });
+  } catch (err) {
+    logger.error(`Error retrieving progress: ${err.message}`);
+    res.status(500).json({
+      error: true,
+      messages: "Internal server error",
+    });
+  }
+};

@@ -23,6 +23,7 @@ router.post("/api/v1/progress", progressController.createProgress);
 router.get("/api/v1/progress/:milestone_id", progressController.getProgressByMilestone);
 router.put("/api/v1/progress/:id", progressController.updateProgress);
 router.get("/api/v1/progress/:id", progressController.getProgressDetail);
+router.get("/api/v1/progress", progressController.getProgressAll);
 router.delete("/api/v1/progress/:id", progressController.deleteProgress);
 
 // Reminder Routes
