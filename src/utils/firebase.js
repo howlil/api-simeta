@@ -1,18 +1,12 @@
 const admin = require('firebase-admin');
-const fs = require('fs');
 require('dotenv').config(); // Load .env file
 
 let serviceAccount = null;
 
-try {
-  const serviceAccountPath = '../../service-accounts.json'; // Adjust the path as needed
-  if (fs.existsSync(serviceAccountPath)) {
-    serviceAccount = require(serviceAccountPath);
-    console.log("Using service account from JSON file.");
-  }
-} catch (error) {
-  console.warn("Failed to load service account JSON:", error.message);
-}
+
+   serviceAccount = require('../../service-accounts.json'); 
+ 
+   console.log(serviceAccount)
 
 if (!serviceAccount) {
   if (process.env.FIREBASE_KEY) {
